@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إزيك يا سلمى</title>
+<style>
+  :root { --pink: #ff5c8a; --soft: #ffd6e4; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: radial-gradient(ellipse at center, #1a0a1f 0%, #07030b 70%);
+    font-family: "Segoe UI", Tahoma, sans-serif; color: #fff;
+  }
+  canvas { position: fixed; inset: 0; z-index: 0; }
+
+  .card {
+    position: fixed; inset: 0; z-index: 1; margin: auto;
+    width: min(90vw, 520px); height: fit-content; padding: 36px 28px;
+    text-align: center; border-radius: 24px;
+    background: rgba(20, 8, 18, 0.45);
+    border: 1px solid rgba(255, 170, 200, 0.18);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 60px rgba(255, 92, 138, 0.15);
+    animation: fadeIn 1.6s ease both;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+  h1 {
+    font-size: clamp(26px, 5.5vw, 42px); margin: 0 0 14px; font-weight: 600;
+    background: linear-gradient(90deg, #ffd6e4, #ff8fb1, #ffd6e4);
+    background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: shine 5s linear infinite;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+
+  .msg { font-size: clamp(18px, 3.4vw, 22px); line-height: 1.8; min-height: 3.6em; margin: 0; }
+  .cursor { display: inline-block; width: 2px; height: 1em; background: var(--soft); vertical-align: middle; animation: blink 0.9s infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .note { margin-top: 18px; font-size: 15px; color: #c9a9b8; min-height: 1.6em; opacity: 0; transition: opacity 1.2s; }
+  .note.show { opacity: 1; }
+
+  button {
+    margin-top: 24px; padding: 12px 32px; font-size: 16px; color: #fff;
+    border: none; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(90deg, #e0457b, #b44fd6);
+    box-shadow: 0 0 20px rgba(224, 69, 123, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: pulseBtn 2.4s ease-in-out infinite;
+  }
+  @keyframes pulseBtn {
+    0%, 100% { box-shadow: 0 0 18px rgba(224, 69, 123, 0.35); }
+    50% { box-shadow: 0 0 36px rgba(224, 69, 123, 0.75); }
+  }
+  button:hover { transform: scale(1.05); }
+  button:active { transform: scale(0.96); }
+
+  /* القلوب اللي بتطلع من الزرار */
+  .heart-pop {
+    position: fixed; pointer-events: none; z-index: 5;
+    user-select: none; line-height: 1;
+  }
+
+  /* الرسالة المخفية */
+  .secret {
+    margin-top: 36px; padding-top: 22px;
+    border-top: 1px solid rgba(255, 170, 200, 0.18);
+  }
+  .secret-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .secret input {
+    padding: 10px 16px; font-size: 16px; border-radius: 999px; outline: none;
+    border: 1px solid rgba(255, 170, 200, 0.35);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff; text-align: center; width: 180px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .secret input:focus { border-color: #ff8fb1; box-shadow: 0 0 14px rgba(255, 143, 177, 0.35); }
+  .secret input::placeholder { color: #bfa3b1; }
+  .secret input.wrong { animation: shake 0.4s; border-color: #ff7a9a; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .secret button { margin-top: 0; padding: 10px 22px; font-size: 15px; animation: none; }
+  .secret button:disabled { opacity: 0.5; }
+
+  .hidden-msg {
+    margin-top: 20px; font-size: clamp(17px, 3.2vw, 20px); line-height: 1.9;
+    min-height: 4em; display: none; color: var(--soft);
+  }
+  .hidden-msg.show { display: block; animation: fadeIn 1.2s ease both; }
+
+  @media (max-width: 480px) { .card { padding: 26px 18px; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<main class="card">
+  <h1>إزيك يا سلمى ❤️</h1>
+  <p class="msg" id="msg"></p>
+  <p class="note" id="note">قدري بقا التعب وكدا وساعات وايام وليالي  وشهور بعمل فيه وكدا (عملته في نص ساعه تقريبا )والله يا سلمى وحشتيني اوي ولا بشوفك ولا بكلمك يعني والله عايشين عادي والله ما عايشين بس يلا  🤍</p>
+  <button id="btn">اضغط هنا</button>
+
+  <section class="secret">
+    <div class="secret-row">
+      <input id="pass" type="text" placeholder="كلمة السر" autocomplete="off">
+      <button id="unlock">افتح</button>
+    </div>
+    <p class="hidden-msg" id="hidden"></p>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  // ---------- دالة الكتابة حرف حرف ----------
+  function typeInto(el, text, speed = 60) {
+    el.textContent = "";
+    const cursor = document.createElement("span");
+    cursor.className = "cursor";
+    el.appendChild(cursor);
+    let i = 0;
+    const t = setInterval(() => {
+      el.insertBefore(document.createTextNode(text[i]), cursor);
+      i++;
+      if (i >= text.length) clearInterval(t);
+    }, speed);
+  }
+
+  // ---------- الرسالة الظاهرة ----------
+  const MESSAGE = "هلا يبويا عامل ايه وحشاني اوي والله يا سلمى يعني بفكر فيكي بقا وكدا واللي هو مش ناسيكي وعملتلك ويب سايت مخصوص وكدا يعني والله يعني يا بخت اي حد معاه مهندس شاطر زي كدا بيحبك بيفكر فيكي بيعملك ويب سايت مخصوص كان ممكن اقولهم عادي من غير التعب ده كله بس عشان بحبك بس يلا هيصي بحبك اوي يا سلمى والله 🤍";
+  typeInto(document.getElementById("msg"), MESSAGE, 70);
+
+  const note = document.getElementById("note");
+  setTimeout(() => note.classList.add("show"), 3500);
+
+  // ---------- زرار القلوب ----------
+  const btn = document.getElementById("btn");
+  const symbols = ["❤️", "🤍", "💖", "💗", "🩷"];
+  btn.addEventListener("click", e => {
+    for (let i = 0; i < 18; i++) {
+      const h = document.createElement("span");
+      h.className = "heart-pop";
+      h.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      const x = e.clientX || innerWidth / 2;
+      const y = e.clientY || innerHeight / 2;
+      h.style.left = x + "px";
+      h.style.top = y + "px";
+      h.style.fontSize = (14 + Math.random() * 20) + "px";
+      document.body.appendChild(h);
+
+      const dx = (Math.random() - 0.5) * 240;
+      const dy = -(120 + Math.random() * 220);
+      h.animate([
+        { transform: "translate(-50%, -50%) scale(0.4)", opacity: 1 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.1)`, opacity: 0 }
+      ], { duration: 1300 + Math.random() * 900, easing: "ease-out", fill: "forwards" })
+        .onfinish = () => h.remove();
+    }
+    burst = 1;
+    btn.textContent = "لا مفيش حاجه ده في قلوب بس طلعت وكدا ❤️";
+  });
+
+  // ---------- الرسالة المخفية ----------
+  const SECRET_PASSWORD = "1/8/2008";
+  const SECRET_MESSAGE = "مفاجئه وكدا ع اساس حاجه مهمه مشي الدنيا انا نازل يوم التلات اللي جاي ان شاء يعني ابوحمص هتنور اه اه عارف المهم لازم اشوفك يا سلمى عشان وحشتيني يا سلمى وهما يومين قاعدهم وهمشي عشان الميد وكدا ف قدري ياللي تنشكي بتكلم بعشم اوي ع اساس هعرف اشوفك بس يلا بحبك اوي يا سلمى  🤍";
+
+  const passInput = document.getElementById("pass");
+  const unlockBtn = document.getElementById("unlock");
+  const hidden = document.getElementById("hidden");
+
+  function tryUnlock() {
+    if (passInput.value.trim() === SECRET_PASSWORD) {
+      hidden.classList.add("show");
+      passInput.disabled = true;
+      unlockBtn.disabled = true;
+      typeInto(hidden, SECRET_MESSAGE, 45);
+    } else {
+      passInput.classList.remove("wrong");
+      void passInput.offsetWidth;
+      passInput.classList.add("wrong");
+    }
+  }
+  unlockBtn.addEventListener("click", tryUnlock);
+  passInput.addEventListener("keydown", e => { if (e.key === "Enter") tryUnlock(); });
+
+  // ---------- Three.js: قلب من نقط + جزيئات ----------
+  const canvas = document.getElementById("c");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 200);
+  camera.position.z = 26;
+
+  const dustGeo = new THREE.BufferGeometry();
+  const dustPos = new Float32Array(600 * 3);
+  for (let i = 0; i < dustPos.length; i++) dustPos[i] = (Math.random() - 0.5) * 100;
+  dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+  const dust = new THREE.Points(dustGeo,
+    new THREE.PointsMaterial({ color: 0xffc6d9, size: 0.18, transparent: true, opacity: 0.5 }));
+  scene.add(dust);
+
+  const heartGroup = new THREE.Group();
+  scene.add(heartGroup);
+  const positions = [];
+  for (let i = 0; i < 1800; i++) {
+    const t = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random());
+    const x = 16 * Math.pow(Math.sin(t), 3) * r;
+    const y = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * r;
+    const z = (Math.random() - 0.5) * 4;
+    positions.push(x * 0.5, y * 0.5, z);
+  }
+  const heartGeo = new THREE.BufferGeometry();
+  heartGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  const heart = new THREE.Points(heartGeo,
+    new THREE.PointsMaterial({ color: 0xff5c8a, size: 0.14, transparent: true, opacity: 0.9 }));
+  heartGroup.add(heart);
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(11, 0.03, 8, 160),
+    new THREE.MeshBasicMaterial({ color: 0xffb3c9, transparent: true, opacity: 0.35 })
+  );
+  ring.rotation.x = Math.PI / 2.4;
+  scene.add(ring);
+
+  let mx = 0, my = 0, burst = 0;
+  addEventListener("mousemove", e => {
+    mx = e.clientX / innerWidth - 0.5;
+    my = e.clientY / innerHeight - 0.5;
+  });
+
+  let clock = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    clock += 0.01;
+    const pulse = 1 + Math.sin(clock * 2.2) * 0.04 + burst * 0.15;
+    burst *= 0.96;
+    heartGroup.scale.setScalar(pulse);
+    heartGroup.rotation.y = Math.sin(clock * 0.4) * 0.25 + mx * 0.4;
+    heartGroup.rotation.x = my * 0.2;
+    ring.rotation.z += 0.002;
+    dust.rotation.y += 0.0004;
+    camera.position.x += (mx * 2 - camera.position.x) * 0.03;
+    camera.position.y += (-my * 2 - camera.position.y) * 0.03;
+    camera.lookAt(0, 0, 0);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  addEventListener("resize", () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+</script>
+</body>
+</html>
